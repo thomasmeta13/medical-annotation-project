@@ -45,7 +45,7 @@ export default function ImageSegmentation() {
 
   useEffect(() => {
     const image = new Image()
-    image.src = '/placeholder.svg?height=600&width=800'
+    image.src = 'https://cdn-ffkfn.nitrocdn.com/OmNhXTQqOUaqBdCgncLHzeLSVeiXkqfx/assets/images/optimized/rev-a352d59/mediphany.com/wp-content/uploads/2021/11/0-1.png'
     image.onload = () => {
       const canvas = canvasRef.current
       const ctx = canvas?.getContext('2d')

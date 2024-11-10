@@ -69,7 +69,7 @@ const mockTasks: Task[] = [
   { id: '10', name: "Analyze Bone Density Scans", description: "Evaluate bone mineral density from DEXA scan images.", version: "v1", completionPercentage: 90, type: 'img-segmentation' },
 ]
 
-export default function TaskView({ projectId }: { projectId: string }) {
+export default function TaskView() {
   const router = useRouter()
   const [project, setProject] = useState<Project | null>(null)
   const [tasks, setTasks] = useState<Task[]>([])
@@ -82,7 +82,7 @@ export default function TaskView({ projectId }: { projectId: string }) {
   useEffect(() => {
     setProject(mockProject)
     setTasks(mockTasks)
-  }, [projectId])
+  }, [])
 
   const sortedTasks = [...tasks].sort((a, b) => {
     if (sortCriteria === 'name') return a.name.localeCompare(b.name)
