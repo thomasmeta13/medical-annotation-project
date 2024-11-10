@@ -14,6 +14,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
 import { AlertCircle, FileSpreadsheet, BarChart2, Search, Bell, AlertTriangle, CheckCircle, Clock, TrendingUp, TrendingDown, Info, X } from 'lucide-react'
 import Link from 'next/link'
+import { LucideIcon } from 'lucide-react'
 
 // Mock data for the task and experts
 const taskData = {
@@ -61,7 +62,7 @@ interface Expert {
 
 interface InsightItem {
   expertId: number
-  icon: any // You might want to be more specific about the icon type
+  icon: LucideIcon
   message: string
 }
 

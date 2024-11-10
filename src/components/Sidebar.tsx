@@ -3,18 +3,18 @@
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { Sidebar, SidebarContent, SidebarHeader, SidebarMenu, SidebarMenuButton, SidebarMenuItem } from "@/components/ui/sidebar"
-import { LayoutDashboard, BarChart2, Database, Users } from 'lucide-react'
+import { LayoutDashboard, BarChart2, Database, Users, LucideIcon } from 'lucide-react'
 
 interface NavItemWithHref {
   name: string;
   href: string;
-  icon: any;
+  icon: LucideIcon;
 }
 
 interface NavItemWithGetHref {
   name: string;
   getHref: (projectId: string) => string;
-  icon: any;
+  icon: LucideIcon;
 }
 
 type NavItem = NavItemWithHref | NavItemWithGetHref;
