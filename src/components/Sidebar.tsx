@@ -4,6 +4,7 @@ import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { Sidebar, SidebarContent, SidebarHeader, SidebarMenu, SidebarMenuButton, SidebarMenuItem } from "@/components/ui/sidebar"
 import { LayoutDashboard, BarChart2, Database, Users, LucideIcon } from 'lucide-react'
+import { useMode } from '@/components/mode-provider'
 
 interface NavItemWithHref {
   name: string;
