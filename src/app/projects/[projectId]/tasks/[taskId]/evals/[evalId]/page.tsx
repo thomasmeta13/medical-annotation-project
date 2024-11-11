@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { useParams } from 'next/navigation'
+import { useParams, useRouter } from 'next/navigation'
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { Progress } from "@/components/ui/progress"
@@ -17,6 +17,7 @@ const mockDataPoints = Array.from({ length: 30 }, (_, i) => ({
 
 export default function EvalRunProgressPage() {
   const params = useParams()
+  const router = useRouter()
   const [currentCheck, setCurrentCheck] = useState(1)
   const [dataPoints, setDataPoints] = useState(mockDataPoints)
   const [isRunning, setIsRunning] = useState(true)
@@ -124,7 +125,11 @@ export default function EvalRunProgressPage() {
             </div>
           </CardContent>
           <CardFooter>
-            <Button className="w-full" disabled={isRunning}>
+            <Button 
+              className="w-full" 
+              disabled={isRunning}
+              onClick={() => router.push(`/projects/${params.projectId}/evals/${params.evalId}/details`)}
+            >
               {isRunning ? 'Evaluation in Progress...' : 'View Detailed Results'}
             </Button>
           </CardFooter>

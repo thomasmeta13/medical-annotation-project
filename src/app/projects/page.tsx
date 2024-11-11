@@ -1,12 +1,14 @@
- 'use client'
+'use client'
 
 import Link from 'next/link'
+import { useState } from 'react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { AvatarGroup } from "@/components/ui/avatar-group"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
-import { PlusCircle, ArrowRight, BarChart2 } from 'lucide-react'
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
+import { PlusCircle, ArrowRight, BarChart2, Copy, Check } from 'lucide-react'
 
 // Mock data for active projects
 const activeProjects = [
@@ -47,6 +49,42 @@ const activeProjects = [
   },
 ]
 
+function CopyableProjectId({ id }: { id: string }) {
+  const [copied, setCopied] = useState(false)
+
+  const copyToClipboard = (e: React.MouseEvent) => {
+    e.preventDefault()
+    e.stopPropagation()
+    navigator.clipboard.writeText(id).then(() => {
+      setCopied(true)
+      setTimeout(() => setCopied(false), 2000)
+    })
+  }
+
+  return (
+    <TooltipProvider>
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <button
+            onClick={copyToClipboard}
+            className="ml-2 inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium bg-secondary/50 text-secondary-foreground hover:bg-secondary transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2"
+          >
+            {id}
+            {copied ? (
+              <Check className="ml-1 h-3 w-3 text-green-500" />
+            ) : (
+              <Copy className="ml-1 h-3 w-3 opacity-50 group-hover:opacity-100" />
+            )}
+          </button>
+        </TooltipTrigger>
+        <TooltipContent side="top" className="text-xs">
+          <p>{copied ? 'Copied!' : 'Click to copy'}</p>
+        </TooltipContent>
+      </Tooltip>
+    </TooltipProvider>
+  )
+}
+
 export default function HomePage() {
   return (
     <div className="p-6 min-h-full w-full bg-gradient-to-b from-background to-background/80">
@@ -67,8 +105,11 @@ export default function HomePage() {
             <Link href={`/projects/${project.id}`} key={project.id} className="block group">
               <Card className="h-full transition-all duration-300 group-hover:shadow-lg border-2 border-border group-hover:border-primary">
                 <CardHeader>
-                  <CardTitle className="flex justify-between items-center">
-                    {project.title}
+                  <CardTitle className="flex justify-between items-center flex-wrap gap-2">
+                    <span className="flex items-center">
+                      {project.title}
+                      <CopyableProjectId id={project.id} />
+                    </span>
                     <Badge variant="secondary" className="group-hover:bg-primary group-hover:text-primary-foreground transition-colors duration-300">
                       {project.tasksAvailable} {project.tasksAvailable === 1 ? 'task' : 'tasks'}
                     </Badge>

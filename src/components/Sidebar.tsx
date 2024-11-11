@@ -1,38 +1,115 @@
 'use client'
 
-import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { Sidebar, SidebarContent, SidebarHeader, SidebarMenu, SidebarMenuButton, SidebarMenuItem } from "@/components/ui/sidebar"
-import { LayoutDashboard, BarChart2, Database, Users, LucideIcon } from 'lucide-react'
-import { useMode } from '@/components/mode-provider'
+import Link from 'next/link'
+import { cn } from "@/lib/utils"
+import { Button } from "@/components/ui/button"
+import { ScrollArea } from "@/components/ui/scroll-area"
+import { FileText, FolderKanban, Users, Database, Target, Book } from 'lucide-react'
 
-interface NavItemWithHref {
-  name: string;
-  href: string;
-  icon: LucideIcon;
+interface SidebarHeaderProps {
+  className?: string
+  children: React.ReactNode
 }
 
-interface NavItemWithGetHref {
-  name: string;
-  getHref: (projectId: string) => string;
-  icon: LucideIcon;
+function SidebarHeader({ className, children }: SidebarHeaderProps) {
+  return (
+    <div className={className}>
+      {children}
+    </div>
+  )
 }
 
-type NavItem = NavItemWithHref | NavItemWithGetHref;
-
-const navItems: NavItem[] = [
-  { name: 'Projects', href: '/projects', icon: LayoutDashboard },
-  { name: 'Evals', getHref: (projectId: string) => `/projects/${projectId}/evals`, icon: BarChart2 },
-  { name: 'Data', getHref: (projectId: string) => `/projects/${projectId}/data`, icon: Database },
-  { name: 'Team', getHref: (projectId: string) => `/projects/${projectId}/team`, icon: Users },
-];
+// Mock data for tasks - replace with real data fetching
+const projectTasks = [
+  { id: "1", name: "Task 1" },
+  { id: "2", name: "Task 2" },
+  { id: "3", name: "Task 3" },
+]
 
 export function AppSidebar() {
   const pathname = usePathname()
-  const projectId = pathname.split('/')[2]
+
+  const getRouteInfo = () => {
+    const parts = pathname.split('/')
+    const projectId = parts[2]
+    const taskId = parts[4]
+    return { projectId, taskId }
+  }
+
+  const { projectId, taskId } = getRouteInfo()
+
+  const renderNavigationButtons = () => {
+    return (
+      <div className="space-y-4">
+        <Link href="/projects">
+          <Button variant={!projectId ? 'secondary' : 'ghost'} className="w-full justify-start">
+            <FolderKanban className="mr-2 h-4 w-4" />
+            Projects
+          </Button>
+        </Link>
+
+        {projectId && (
+          <div className="space-y-1">
+            <Link href={`/projects/${projectId}`}>
+              <Button variant="ghost" className="w-full justify-start font-semibold">
+                <FolderKanban className="mr-2 h-4 w-4" />
+                Project {projectId}
+              </Button>
+            </Link>
+            
+            <div className="ml-4 space-y-1">
+              {projectTasks.map((task) => (
+                <div key={task.id}>
+                  <Link href={`/projects/${projectId}/tasks/${task.id}`}>
+                    <Button 
+                      variant={taskId === task.id ? 'secondary' : 'ghost'} 
+                      className="w-full justify-start"
+                    >
+                      <FileText className="mr-2 h-4 w-4" />
+                      {task.name}
+                    </Button>
+                  </Link>
+                  
+                  {taskId === task.id && (
+                    <div className="ml-4 space-y-1">
+                      <Link href={`/projects/${projectId}/tasks/${task.id}/evals`}>
+                        <Button variant={pathname.includes('/evals') ? 'secondary' : 'ghost'} className="w-full justify-start">
+                          <Target className="mr-2 h-4 w-4" />
+                          Evals
+                        </Button>
+                      </Link>
+                      <Link href={`/projects/${projectId}/tasks/${task.id}/data`}>
+                        <Button variant={pathname.includes('/data') ? 'secondary' : 'ghost'} className="w-full justify-start">
+                          <Database className="mr-2 h-4 w-4" />
+                          Data
+                        </Button>
+                      </Link>
+                      <Link href={`/projects/${projectId}/tasks/${task.id}/team`}>
+                        <Button variant={pathname.includes('/team') ? 'secondary' : 'ghost'} className="w-full justify-start">
+                          <Users className="mr-2 h-4 w-4" />
+                          Team
+                        </Button>
+                      </Link>
+                      <Link href={`/projects/${projectId}/tasks/${task.id}/instructions`}>
+                        <Button variant={pathname.includes('/instructions') ? 'secondary' : 'ghost'} className="w-full justify-start">
+                          <Book className="mr-2 h-4 w-4" />
+                          Instructions
+                        </Button>
+                      </Link>
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+      </div>
+    )
+  }
 
   return (
-    <Sidebar className="border-r border-border bg-background">
+    <div className={cn("pb-12 w-64 shrink-0 border-r")}>
       <SidebarHeader className="border-b border-border px-6 py-4">
         <Link href="/" className="flex items-center gap-3">
           <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-foreground">
@@ -41,27 +118,15 @@ export function AppSidebar() {
           <span className="text-xl font-semibold">Invoke</span>
         </Link>
       </SidebarHeader>
-      <SidebarContent className="mt-12">
-        <SidebarMenu>
-          {navItems.map((item) => {
-            const href = 'getHref' in item ? item.getHref(projectId) : item.href
-            return (
-              <SidebarMenuItem key={item.name}>
-                <SidebarMenuButton 
-                  asChild 
-                  isActive={pathname === href}
-                  className="flex items-center gap-3 px-6 py-2.5 text-sm font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-foreground data-[active=true]:bg-muted data-[active=true]:text-foreground"
-                >
-                  <Link href={href}>
-                    <item.icon className="h-4 w-4" />
-                    <span>{item.name}</span>
-                  </Link>
-                </SidebarMenuButton>
-              </SidebarMenuItem>
-            )
-          })}
-        </SidebarMenu>
-      </SidebarContent>
-    </Sidebar>
+      <div className="p-4">
+        <ScrollArea className="h-[calc(100vh-5rem)]">
+          {renderNavigationButtons()}
+        </ScrollArea>
+      </div>
+    </div>
   )
+}
+
+export function TaskerSidebar() {
+  return <AppSidebar />
 }

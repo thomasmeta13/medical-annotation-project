@@ -4,8 +4,7 @@ import type { Metadata } from "next"
 import localFont from "next/font/local"
 import "./globals.css"
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar"
-import { AppSidebar } from '@/components/Sidebar'
-import { TaskerSidebar } from '@/components/TaskerSidebar'
+import { AppSidebar, TaskerSidebar } from '@/components/Sidebar'
 import { ThemeProvider } from "@/components/theme-provider"
 import { ThemeToggle } from "@/components/ThemeToggle"
 import { ModeToggle } from "@/components/ModeToggle"

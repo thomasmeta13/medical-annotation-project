@@ -1,7 +1,7 @@
 'use client'
 
 import * as React from "react"
-import { ChevronDown, ChevronUp, Download, MoreHorizontal, Search, ThumbsDown, ThumbsUp, X } from "lucide-react"
+import { ChevronDown, ChevronUp, Download, MoreHorizontal, Search, ThumbsDown, ThumbsUp, X, MessageSquare, Send } from "lucide-react"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
@@ -28,12 +28,43 @@ import {
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
   DialogHeader,
   DialogTitle,
+  DialogTrigger,
 } from "@/components/ui/dialog"
+import { Textarea } from "@/components/ui/textarea"
+import { ScrollArea } from "@/components/ui/scroll-area"
+import { Badge } from "@/components/ui/badge"
+
+interface Comment {
+  id: number
+  text: string
+  author: string
+  role: string
+  timestamp: string
+}
+
+interface DataRow {
+  id: number
+  expertId: number
+  image: string
+  input: string
+  expertFeedback: string
+  vote: "positive" | "negative"
+  feedbackNotes: string
+  timestamp: string
+  expert: {
+    name: string
+    avatar: string
+    role: string
+  }
+  datasetVersion: string
+  comments: Comment[]
+}
 
 // Mock data for the spreadsheet
-const mockData = [
+const mockData: DataRow[] = [
   {
     id: 1,
     expertId: 1,
@@ -46,8 +77,18 @@ const mockData = [
     expert: {
       name: "Dr. Jane Smith",
       avatar: "/avatars/joe.jpg",
+      role: "Radiologist"
     },
-    datasetVersion: "v2.3"
+    datasetVersion: "v2.3",
+    comments: [
+      {
+        id: 1,
+        text: "Excellent catch on the small mass. The urgency is well-noted.",
+        author: "Dr. John Doe",
+        role: "Neurologist",
+        timestamp: "2024-11-09T15:00:00Z"
+      }
+    ]
   },
   {
     id: 2,
@@ -61,8 +102,10 @@ const mockData = [
     expert: {
       name: "Dr. John Doe",
       avatar: "/avatars/joe.jpg",
+      role: "Neurologist"
     },
-    datasetVersion: "v2.3"
+    datasetVersion: "v2.3",
+    comments: []
   },
   {
     id: 3,
@@ -76,8 +119,10 @@ const mockData = [
     expert: {
       name: "Dr. Emily Brown",
       avatar: "/avatars/joe.jpg",
+      role: "Neurologist"
     },
-    datasetVersion: "v2.4"
+    datasetVersion: "v2.4",
+    comments: []
   },
 ]
 
@@ -90,6 +135,9 @@ export default function SpreadsheetView({ expertId }: SpreadsheetViewProps) {
   const [expandedRows, setExpandedRows] = React.useState<Set<number>>(new Set())
   const [searchTerm, setSearchTerm] = React.useState("")
   const [selectedImage, setSelectedImage] = React.useState<string | null>(null)
+  const [selectedRowForComment, setSelectedRowForComment] = React.useState<DataRow | null>(null)
+  const [newComment, setNewComment] = React.useState("")
+  const [data, setData] = React.useState(mockData)
 
   const toggleSort = () => {
     setSortDirection(sortDirection === "asc" ? "desc" : "asc")
@@ -117,7 +165,7 @@ export default function SpreadsheetView({ expertId }: SpreadsheetViewProps) {
   }
 
   const filteredAndSortedData = React.useMemo(() => {
-    return mockData
+    return data
       .filter(row => row.expertId === parseInt(expertId))
       .filter(row =>
         row.input.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -129,7 +177,32 @@ export default function SpreadsheetView({ expertId }: SpreadsheetViewProps) {
         const dateB = new Date(b.timestamp).getTime()
         return sortDirection === "asc" ? dateA - dateB : dateB - dateA
       })
-  }, [expertId, searchTerm, sortDirection])
+  }, [data, expertId, searchTerm, sortDirection])
+
+  const handleAddComment = () => {
+    if (selectedRowForComment && newComment.trim()) {
+      const updatedData = data.map(row => {
+        if (row.id === selectedRowForComment.id) {
+          return {
+            ...row,
+            comments: [
+              ...row.comments,
+              {
+                id: row.comments.length + 1,
+                text: newComment.trim(),
+                author: "Current User",
+                role: "QA Engineer", // This would be dynamically set based on the logged-in user's role
+                timestamp: new Date().toISOString()
+              }
+            ]
+          }
+        }
+        return row
+      })
+      setData(updatedData)
+      setNewComment("")
+    }
+  }
 
   return (
     <Card className="w-full">
@@ -173,6 +246,7 @@ export default function SpreadsheetView({ expertId }: SpreadsheetViewProps) {
             </TableHead>
             <TableHead className="w-[100px]">Dataset Version</TableHead>
             <TableHead className="w-[100px]">Expert</TableHead>
+            <TableHead className="w-[100px]">Comments</TableHead>
             <TableHead className="w-[60px]"></TableHead>
           </TableRow>
         </TableHeader>
@@ -209,8 +283,80 @@ export default function SpreadsheetView({ expertId }: SpreadsheetViewProps) {
                         <AvatarFallback>{row.expert.name.split(' ').map(n => n[0]).join('')}</AvatarFallback>
                       </Avatar>
                     </TooltipTrigger>
-                    <TooltipContent>{row.expert.name}</TooltipContent>
+                    <TooltipContent>
+                      <p>{row.expert.name}</p>
+                      <p className="text-xs text-muted-foreground">{row.expert.role}</p>
+                    </TooltipContent>
                   </Tooltip>
+                </TableCell>
+                <TableCell>
+                  <Dialog>
+                    <DialogTrigger asChild>
+                      <Button variant="ghost" className="h-8 w-8 p-0" onClick={() => setSelectedRowForComment(row)}>
+                        <MessageSquare className="h-4 w-4" />
+                        {row.comments.length > 0 && (
+                          <span className="ml-1 text-xs">{row.comments.length}</span>
+                        )}
+                      </Button>
+                    </DialogTrigger>
+                    <DialogContent className="max-w-4xl">
+                      <DialogHeader>
+                        <DialogTitle>Comments</DialogTitle>
+                        <DialogDescription>
+                          View and add comments for this annotation.
+                        </DialogDescription>
+                      </DialogHeader>
+                      <div className="mt-4 grid grid-cols-2 gap-4">
+                        <div>
+                          <img src={row.image} alt="MRI Scan" className="w-full rounded-md" />
+                        </div>
+                        <div className="space-y-4">
+                          <div>
+                            <h3 className="font-semibold">Input:</h3>
+                            <p>{row.input}</p>
+                          </div>
+                          <div>
+                            <h3 className="font-semibold">Expert Feedback:</h3>
+                            <p>{row.expertFeedback}</p>
+                          </div>
+                          <div>
+                            <h3 className="font-semibold">Comments:</h3>
+                            <ScrollArea className="h-[200px] w-full rounded-md border p-4">
+                              {row.comments.map((comment, index) => (
+                                <div key={index} className="mb-4 last:mb-0">
+                                  <div className="flex items-center space-x-2">
+                                    <Avatar className="h-6 w-6">
+                                      <AvatarFallback>{comment.author[0]}</AvatarFallback>
+                                    </Avatar>
+                                    <span className="font-semibold">{comment.author}</span>
+                                    <Badge variant="secondary">{comment.role}</Badge>
+                                    <span className="text-xs text-muted-foreground">
+                                      {getRelativeTime(comment.timestamp)}
+                                    </span>
+                                  </div>
+                                  <p className="mt-1 text-sm">{comment.text}</p>
+                                </div>
+                              ))}
+                            </ScrollArea>
+                          </div>
+                          <div>
+                            <h3 className="font-semibold mb-2">Add a Comment:</h3>
+                            <div className="flex items-center space-x-2">
+                              <Textarea
+                                placeholder="Type your comment here..."
+                                value={newComment}
+                                onChange={(e) => setNewComment(e.target.value)}
+                                className="flex-grow"
+                              />
+                              <Button onClick={handleAddComment} size="icon">
+                                <Send className="h-4 w-4" />
+                              </Button>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </DialogContent>
+                  </Dialog>
                 </TableCell>
                 <TableCell>
                   <DropdownMenu>
@@ -231,7 +377,7 @@ export default function SpreadsheetView({ expertId }: SpreadsheetViewProps) {
               </TableRow>
               {expandedRows.has(row.id) && (
                 <TableRow>
-                  <TableCell colSpan={8} className="bg-muted/50">
+                  <TableCell colSpan={9} className="bg-muted/50">
                     <div className="p-4">
                       <h4 className="font-semibold mb-2">Feedback Notes</h4>
                       <p className="text-sm text-muted-foreground">{row.feedbackNotes}</p>

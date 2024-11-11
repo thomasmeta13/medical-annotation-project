@@ -25,9 +25,9 @@ const tasks = [
     lastEdit: '2023-04-01', 
     accuracy: 92,
     assignees: [
-      { id: 1, name: 'John Doe', avatar: '/avatars/joe.jpg', status: 'active' },
-      { id: 2, name: 'Jane Smith', avatar: '/avatars/jane-smith.jpg', status: 'idle' },
-      { id: 3, name: 'Bob Johnson', avatar: '/avatars/bob-johnson.jpg', status: 'offline' },
+      { id: 1, name: 'John Doe', avatar: '/avatars/joe.jpg', lastSubmission: new Date().toISOString() },
+      { id: 2, name: 'Jane Smith', avatar: '/avatars/jane-smith.jpg', lastSubmission: new Date(Date.now() - 36 * 60 * 60 * 1000).toISOString() },
+      { id: 3, name: 'Bob Johnson', avatar: '/avatars/bob-johnson.jpg', lastSubmission: new Date(Date.now() - 96 * 60 * 60 * 1000).toISOString() },
     ]
   },
   { 
@@ -38,11 +38,11 @@ const tasks = [
     lastEdit: '2023-03-28', 
     accuracy: 88,
     assignees: [
-      { id: 1, name: 'John Doe', avatar: '/avatars/joe.jpg', status: 'active' },
-      { id: 2, name: 'Jane Smith', avatar: '/avatars/jane-smith.jpg', status: 'idle' },
-      { id: 3, name: 'Bob Johnson', avatar: '/avatars/bob-johnson.jpg', status: 'offline' },
-      { id: 4, name: 'Alice Williams', avatar: '/avatars/alice-williams.png', status: 'active' },
-      { id: 5, name: 'Charlie Brown', avatar: '/avatars/charlie-brown.png', status: 'idle' },
+      { id: 1, name: 'John Doe', avatar: '/avatars/joe.jpg', lastSubmission: new Date().toISOString() },
+      { id: 2, name: 'Jane Smith', avatar: '/avatars/jane-smith.jpg', lastSubmission: new Date(Date.now() - 36 * 60 * 60 * 1000).toISOString() },
+      { id: 3, name: 'Bob Johnson', avatar: '/avatars/bob-johnson.jpg', lastSubmission: new Date(Date.now() - 96 * 60 * 60 * 1000).toISOString() },
+      { id: 4, name: 'Alice Williams', avatar: '/avatars/alice-williams.png', lastSubmission: new Date().toISOString() },
+      { id: 5, name: 'Charlie Brown', avatar: '/avatars/charlie-brown.png', lastSubmission: new Date().toISOString() },
     ]
   },
   { 
@@ -53,28 +53,25 @@ const tasks = [
     lastEdit: '2023-03-25', 
     accuracy: 95,
     assignees: [
-      { id: 2, name: 'Jane Smith', avatar: '/avatars/jane-smith.png', status: 'active' },
+      { id: 2, name: 'Jane Smith', avatar: '/avatars/jane-smith.png', lastSubmission: new Date().toISOString() },
     ]
   },
 ]
 
 const teamMembers = [
-  { id: 1, name: 'John Doe', role: 'Developer', avatar: '/avatars/joe.jpg' },
-  { id: 2, name: 'Jane Smith', role: 'QA', avatar: '/avatars/jane-smith.jpg' },
-  { id: 3, name: 'Bob Johnson', role: 'QA', avatar: '/avatars/bob-johnson.jpg' },
+  { id: 1, name: 'John Doe', role: 'Developer', avatar: '/avatars/joe.jpg', lastSubmission: '2024-03-15 14:30' },
+  { id: 2, name: 'Jane Smith', role: 'QA', avatar: '/avatars/jane-smith.jpg', lastSubmission: '2024-03-14 16:45' },
+  { id: 3, name: 'Bob Johnson', role: 'QA', avatar: '/avatars/bob-johnson.jpg', lastSubmission: '2024-03-15 09:15' },
 ]
 
-const getStatusColor = (status: string) => {
-  switch (status) {
-    case 'active':
-      return 'border-green-500'
-    case 'idle':
-      return 'border-yellow-500'
-    case 'offline':
-      return 'border-red-500'
-    default:
-      return 'border-gray-500'
-  }
+const getStatusColor = (lastSubmission: string) => {
+  const now = new Date();
+  const submission = new Date(lastSubmission);
+  const hoursDiff = (now.getTime() - submission.getTime()) / (1000 * 60 * 60);
+
+  if (hoursDiff < 24) return 'border-green-500';  // Less than 24 hours
+  if (hoursDiff < 72) return 'border-yellow-500'; // Less than 3 days
+  return 'border-red-500';                        // More than 3 days
 }
 
 
@@ -192,7 +189,7 @@ export default function ProjectView() {
                               <TooltipTrigger asChild>
                                 <AvatarGroup className="hover:cursor-pointer -space-x-2">
                                   {task.assignees.slice(0, 3).map((assignee) => (
-                                    <Avatar key={assignee.id} className={`border-2 ${getStatusColor(assignee.status)}`}>
+                                    <Avatar key={assignee.id} className={`border-2 ${getStatusColor(assignee.lastSubmission)}`}>
                                       <AvatarImage src={assignee.avatar} alt={assignee.name} />
                                       <AvatarFallback>{assignee.name.split(' ').map(n => n[0]).join('')}</AvatarFallback>
                                     </Avatar>
@@ -207,7 +204,7 @@ export default function ProjectView() {
                               <TooltipContent>
                                 <div className="space-y-1">
                                   {task.assignees.map((assignee) => (
-                                    <div key={assignee.id}>{assignee.name} - {assignee.status}</div>
+                                    <div key={assignee.id}>{assignee.name} - Last submission: {assignee.lastSubmission}</div>
                                   ))}
                                 </div>
                               </TooltipContent>
@@ -244,10 +241,19 @@ export default function ProjectView() {
                   <ul className="space-y-2">
                     {teamMembers.filter(member => member.role === 'Developer').map((member) => (
                       <li key={member.id} className="flex items-center gap-2">
-                        <Avatar>
-                          <AvatarImage src={member.avatar} alt={member.name} />
-                          <AvatarFallback>{member.name.split(' ').map(n => n[0]).join('')}</AvatarFallback>
-                        </Avatar>
+                        <TooltipProvider>
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <Avatar>
+                                <AvatarImage src={member.avatar} alt={member.name} />
+                                <AvatarFallback>{member.name.split(' ').map(n => n[0]).join('')}</AvatarFallback>
+                              </Avatar>
+                            </TooltipTrigger>
+                            <TooltipContent>
+                              <p>Last submission: {member.lastSubmission}</p>
+                            </TooltipContent>
+                          </Tooltip>
+                        </TooltipProvider>
                         <div>
                           <p className="font-medium">{member.name}</p>
                           <p className="text-xs text-muted-foreground">{member.role}</p>
