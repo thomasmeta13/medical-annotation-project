@@ -13,6 +13,7 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip"
+import { LucideIcon } from 'lucide-react'
 
 interface SidebarHeaderProps {
   className?: string
@@ -34,7 +35,16 @@ const projectTasks = [
   { id: "3", name: "Task 3" },
 ]
 
-function NavButton({ href, icon: Icon, label, variant = 'ghost', className, isCollapsed = false }) {
+interface NavButtonProps {
+  href: string
+  icon: LucideIcon
+  label: string
+  variant?: 'ghost' | 'default' | 'secondary'
+  className?: string
+  isCollapsed?: boolean
+}
+
+function NavButton({ href, icon: Icon, label, variant = 'ghost', className, isCollapsed = false }: NavButtonProps) {
   return isCollapsed ? (
     <TooltipProvider delayDuration={0}>
       <Tooltip>
