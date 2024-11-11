@@ -5,7 +5,14 @@ import Link from 'next/link'
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
 import { ScrollArea } from "@/components/ui/scroll-area"
-import { FileText, FolderKanban, Users, Database, Target, Book } from 'lucide-react'
+import { FileText, FolderKanban, Users, Database, Target, Book, ChevronLeft, ChevronRight } from 'lucide-react'
+import { useSidebar } from './sidebar-provider'
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip"
 
 interface SidebarHeaderProps {
   className?: string
@@ -27,8 +34,35 @@ const projectTasks = [
   { id: "3", name: "Task 3" },
 ]
 
+function NavButton({ href, icon: Icon, label, variant = 'ghost', className, isCollapsed = false }) {
+  return isCollapsed ? (
+    <TooltipProvider delayDuration={0}>
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <Link href={href}>
+            <Button variant={variant} size="icon" className={cn("w-10 h-10", className)}>
+              <Icon className="h-4 w-4" />
+            </Button>
+          </Link>
+        </TooltipTrigger>
+        <TooltipContent side="right">
+          <p>{label}</p>
+        </TooltipContent>
+      </Tooltip>
+    </TooltipProvider>
+  ) : (
+    <Link href={href}>
+      <Button variant={variant} className={cn("w-full justify-start", className)}>
+        <Icon className="mr-2 h-4 w-4" />
+        {label}
+      </Button>
+    </Link>
+  )
+}
+
 export function AppSidebar() {
   const pathname = usePathname()
+  const { isCollapsed, toggleCollapsed } = useSidebar()
 
   const getRouteInfo = () => {
     const parts = pathname.split('/')
@@ -41,62 +75,65 @@ export function AppSidebar() {
 
   const renderNavigationButtons = () => {
     return (
-      <div className="space-y-4">
-        <Link href="/projects">
-          <Button variant={!projectId ? 'secondary' : 'ghost'} className="w-full justify-start">
-            <FolderKanban className="mr-2 h-4 w-4" />
-            Projects
-          </Button>
-        </Link>
+      <div className={cn("space-y-4", isCollapsed && "space-y-2")}>
+        <NavButton
+          href="/projects"
+          icon={FolderKanban}
+          label="Projects"
+          variant={!projectId ? 'secondary' : 'ghost'}
+          isCollapsed={isCollapsed}
+        />
 
         {projectId && (
-          <div className="space-y-1">
-            <Link href={`/projects/${projectId}`}>
-              <Button variant="ghost" className="w-full justify-start font-semibold">
-                <FolderKanban className="mr-2 h-4 w-4" />
-                Project {projectId}
-              </Button>
-            </Link>
+          <div className={cn("space-y-1", isCollapsed && "space-y-2")}>
+            <NavButton
+              href={`/projects/${projectId}`}
+              icon={FolderKanban}
+              label={`Project ${projectId}`}
+              isCollapsed={isCollapsed}
+            />
             
-            <div className="ml-4 space-y-1">
+            <div className={cn(isCollapsed ? "space-y-2" : "ml-4 space-y-1")}>
               {projectTasks.map((task) => (
                 <div key={task.id}>
-                  <Link href={`/projects/${projectId}/tasks/${task.id}`}>
-                    <Button 
-                      variant={taskId === task.id ? 'secondary' : 'ghost'} 
-                      className="w-full justify-start"
-                    >
-                      <FileText className="mr-2 h-4 w-4" />
-                      {task.name}
-                    </Button>
-                  </Link>
+                  <NavButton
+                    href={`/projects/${projectId}/tasks/${task.id}`}
+                    icon={FileText}
+                    label={task.name}
+                    variant={taskId === task.id ? 'secondary' : 'ghost'}
+                    isCollapsed={isCollapsed}
+                  />
                   
-                  {taskId === task.id && (
+                  {taskId === task.id && !isCollapsed && (
                     <div className="ml-4 space-y-1">
-                      <Link href={`/projects/${projectId}/tasks/${task.id}/evals`}>
-                        <Button variant={pathname.includes('/evals') ? 'secondary' : 'ghost'} className="w-full justify-start">
-                          <Target className="mr-2 h-4 w-4" />
-                          Evals
-                        </Button>
-                      </Link>
-                      <Link href={`/projects/${projectId}/tasks/${task.id}/data`}>
-                        <Button variant={pathname.includes('/data') ? 'secondary' : 'ghost'} className="w-full justify-start">
-                          <Database className="mr-2 h-4 w-4" />
-                          Data
-                        </Button>
-                      </Link>
-                      <Link href={`/projects/${projectId}/tasks/${task.id}/team`}>
-                        <Button variant={pathname.includes('/team') ? 'secondary' : 'ghost'} className="w-full justify-start">
-                          <Users className="mr-2 h-4 w-4" />
-                          Team
-                        </Button>
-                      </Link>
-                      <Link href={`/projects/${projectId}/tasks/${task.id}/instructions`}>
-                        <Button variant={pathname.includes('/instructions') ? 'secondary' : 'ghost'} className="w-full justify-start">
-                          <Book className="mr-2 h-4 w-4" />
-                          Instructions
-                        </Button>
-                      </Link>
+                      <NavButton
+                        href={`/projects/${projectId}/tasks/${task.id}/evals`}
+                        icon={Target}
+                        label="Evals"
+                        variant={pathname.includes('/evals') ? 'secondary' : 'ghost'}
+                        isCollapsed={isCollapsed}
+                      />
+                      <NavButton
+                        href={`/projects/${projectId}/tasks/${task.id}/data`}
+                        icon={Database}
+                        label="Data"
+                        variant={pathname.includes('/data') ? 'secondary' : 'ghost'}
+                        isCollapsed={isCollapsed}
+                      />
+                      <NavButton
+                        href={`/projects/${projectId}/tasks/${task.id}/team`}
+                        icon={Users}
+                        label="Team"
+                        variant={pathname.includes('/team') ? 'secondary' : 'ghost'}
+                        isCollapsed={isCollapsed}
+                      />
+                      <NavButton
+                        href={`/projects/${projectId}/tasks/${task.id}/instructions`}
+                        icon={Book}
+                        label="Instructions"
+                        variant={pathname.includes('/instructions') ? 'secondary' : 'ghost'}
+                        isCollapsed={isCollapsed}
+                      />
                     </div>
                   )}
                 </div>
@@ -109,16 +146,37 @@ export function AppSidebar() {
   }
 
   return (
-    <div className={cn("pb-12 w-64 shrink-0 border-r")}>
-      <SidebarHeader className="border-b border-border px-6 py-4">
+    <div className={cn(
+      "relative pb-12 border-r transition-all duration-300",
+      isCollapsed ? "w-16" : "w-64"
+    )}>
+      <SidebarHeader className={cn(
+        "border-b border-border transition-all duration-300",
+        isCollapsed ? "px-2" : "px-6",
+        "py-4"
+      )}>
         <Link href="/" className="flex items-center gap-3">
-          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-foreground">
+          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-foreground shrink-0">
             <span className="text-lg font-bold text-background">I</span>
           </div>
-          <span className="text-xl font-semibold">Invoke</span>
+          {!isCollapsed && <span className="text-xl font-semibold">Invoke</span>}
         </Link>
       </SidebarHeader>
-      <div className="p-4">
+      
+      <Button
+        variant="ghost"
+        size="sm"
+        className="absolute right-[-12px] top-7 h-6 w-6 rounded-full border bg-background p-0 hover:bg-background"
+        onClick={toggleCollapsed}
+      >
+        {isCollapsed ? (
+          <ChevronRight className="h-3 w-3" />
+        ) : (
+          <ChevronLeft className="h-3 w-3" />
+        )}
+      </Button>
+
+      <div className={cn("p-4", isCollapsed && "p-2")}>
         <ScrollArea className="h-[calc(100vh-5rem)]">
           {renderNavigationButtons()}
         </ScrollArea>

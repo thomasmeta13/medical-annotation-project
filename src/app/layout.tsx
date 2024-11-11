@@ -3,7 +3,7 @@
 import type { Metadata } from "next"
 import localFont from "next/font/local"
 import "./globals.css"
-import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar"
+import { SidebarProvider } from "@/components/sidebar-provider"
 import { AppSidebar, TaskerSidebar } from '@/components/Sidebar'
 import { ThemeProvider } from "@/components/theme-provider"
 import { ThemeToggle } from "@/components/ThemeToggle"
@@ -27,23 +27,24 @@ function RootLayoutContent({ children }: { children: React.ReactNode }) {
 
   return (
     <div className="flex h-screen bg-background">
-      {mode === "tasker" ? <TaskerSidebar /> : <AppSidebar />}
-      <div className="flex-1 flex flex-col overflow-hidden w-full lg:w-[calc(100vw-16rem)]">
-        <header className="sticky top-0 z-10 flex h-16 items-center border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-          <div className="flex-1 flex items-center justify-between px-4">
-            <SidebarTrigger />
-            <div className="flex items-center gap-2">
-              <ModeToggle />
-              <ThemeToggle />
+      <SidebarProvider>
+        {mode === "tasker" ? <TaskerSidebar /> : <AppSidebar />}
+        <div className="flex-1 flex flex-col overflow-hidden">
+          <header className="sticky top-0 z-10 flex h-16 items-center border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+            <div className="flex-1 flex items-center justify-end px-4">
+              <div className="flex items-center gap-2">
+                <ModeToggle />
+                <ThemeToggle />
+              </div>
             </div>
-          </div>
-        </header>
-        <main className="flex-1 overflow-auto">
-          <div className="h-full">
-            {children}
-          </div>
-        </main>
-      </div>
+          </header>
+          <main className="flex-1 overflow-auto">
+            <div className="h-full">
+              {children}
+            </div>
+          </main>
+        </div>
+      </SidebarProvider>
     </div>
   )
 }
