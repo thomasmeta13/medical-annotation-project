@@ -1,7 +1,7 @@
 'use client'
 
 import * as React from "react"
-import { BarChart2, Bot, ChevronDown, Download, FileText, MoreHorizontal, Plus, Search, Target, ThumbsDown, ThumbsUp, Upload, Users, Zap, MessageSquare, X, Send } from "lucide-react"
+import { BarChart2, Bot, ChevronDown, Download, FileText, MoreHorizontal, Plus, Search, Target, ThumbsDown, ThumbsUp, Upload, Users, Zap, MessageSquare, X, Send, CheckCircle, AlertCircle, XCircle, Play } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
@@ -30,6 +30,7 @@ import {
 } from "@/components/ui/dialog"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { Textarea } from "@/components/ui/textarea"
+import { AudioPlayer } from "@/components/ui/audio-player"
 
 // Types
 interface Expert {
@@ -56,13 +57,14 @@ interface Comment {
 interface DataRow {
   id: number
   image: string
+  audio?: string
   input: string
   modelResponse: string
   evalResponse: string
   grade: number
   comments: Comment[]
   expertFeedback: ExpertFeedback[]
-  consensus: string
+  consensus: 'check' | 'alert' | 'cross'
   cumulativeFeedback: string
 }
 
@@ -77,6 +79,7 @@ const mockData: DataRow[] = [
   {
     id: 1,
     image: "https://c8.alamy.com/comp/E18EC6/sequence-of-vertical-sections-of-a-human-brain-mri-scan-E18EC6.jpg",
+    audio: "sample1.mp3",
     input: "Patient presents with recurring headaches in the frontal lobe region.",
     modelResponse: "Potential abnormality detected in the frontal lobe. Further investigation recommended.",
     evalResponse: "Clear indication of small mass in the right frontal lobe. Requires immediate follow-up.",
@@ -95,10 +98,77 @@ const mockData: DataRow[] = [
       { expertId: 2, feedback: "Correct identification, lacks specificity", vote: 'neutral' },
       { expertId: 3, feedback: "Good initial assessment", vote: 'positive' },
     ],
-    consensus: "Abnormality present, requires urgent attention",
+    consensus: "alert",
     cumulativeFeedback: "Model shows promise but needs improvement in specificity and urgency assessment",
   },
-  // ... add more mock data items here
+  {
+    id: 2,
+    image: "https://media.istockphoto.com/id/92408093/photo/brain-mri-scan.jpg?s=612x612&w=0&k=20&c=LhOLajIBecgUVwYuwMhnpyKbEmYvGqWlm5s6maYZYw4=",
+    audio: "/audio/sample2.mp3",
+    input: "Follow-up scan for post-operative monitoring of tumor resection site.",
+    modelResponse: "No signs of recurrence detected. Healing progressing as expected.",
+    evalResponse: "Concur with model assessment. No evidence of tumor regrowth.",
+    grade: 5,
+    comments: [],
+    expertFeedback: [
+      { expertId: 1, feedback: "Excellent assessment, agree with findings", vote: 'positive' },
+      { expertId: 2, feedback: "Accurate evaluation of post-operative site", vote: 'positive' },
+      { expertId: 3, feedback: "Concur, no concerning features observed", vote: 'positive' },
+    ],
+    consensus: "check",
+    cumulativeFeedback: "Model performed exceptionally well in post-operative assessment",
+  },
+  {
+    id: 3,
+    image: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRtK75NLL8Am-BHCYUpcxIKoKtuxaqt8wo7Xg&s",
+    audio: "/audio/sample3.mp3",
+    input: "Evaluate for signs of stroke in left hemisphere.",
+    modelResponse: "No significant abnormalities detected in the left hemisphere.",
+    evalResponse: "Subtle signs of ischemia in the left temporal region. Additional views recommended.",
+    grade: 2,
+    comments: [],
+    expertFeedback: [
+      { expertId: 1, feedback: "Model missed early signs of ischemia", vote: 'negative' },
+      { expertId: 2, feedback: "Agree with eval, model needs improvement", vote: 'negative' },
+      { expertId: 3, feedback: "Critical miss, requires immediate attention", vote: 'negative' },
+    ],
+    consensus: "cross",
+    cumulativeFeedback: "Model failed to detect subtle signs of ischemia. Requires significant improvement in sensitivity.",
+  },
+  {
+    id: 4,
+    image: "https://www.researchgate.net/publication/51089880/figure/fig1/AS:271610723704833@1441772665723/Axial-T2-weighted-MRI-scan-showing-a-left-temporal-lobe-tumor.png",
+    audio: "/audio/sample4.mp3",
+    input: "Assess for presence of temporal lobe abnormalities.",
+    modelResponse: "Possible mass detected in left temporal lobe. Further investigation recommended.",
+    evalResponse: "Confirmed presence of tumor in left temporal lobe. Immediate specialist referral required.",
+    grade: 4,
+    comments: [],
+    expertFeedback: [
+      { expertId: 1, feedback: "Good detection, but underestimated severity", vote: 'positive' },
+      { expertId: 2, feedback: "Accurate location, missed definitive diagnosis", vote: 'neutral' },
+      { expertId: 3, feedback: "Correct identification, needs improvement in urgency assessment", vote: 'positive' },
+    ],
+    consensus: "alert",
+    cumulativeFeedback: "Model successfully detected abnormality but needs improvement in assessing severity and urgency.",
+  },
+  {
+    id: 5,
+    image: "https://radiopaedia.org/uploads/radio/2019/02/22/pre_1550827982_81_84178_big_gallery.jpeg",
+    audio: "/audio/sample5.mp3",
+    input: "Evaluate for signs of multiple sclerosis.",
+    modelResponse: "Multiple hyperintense lesions detected in periventricular white matter. Consistent with multiple sclerosis.",
+    evalResponse: "Agree with model assessment. Classic presentation of multiple sclerosis.",
+    grade: 5,
+    comments: [],
+    expertFeedback: [
+      { expertId: 1, feedback: "Excellent detection and interpretation", vote: 'positive' },
+      { expertId: 2, feedback: "Accurate identification of MS lesions", vote: 'positive' },
+      { expertId: 3, feedback: "Concur with model's assessment", vote: 'positive' },
+    ],
+    consensus: "check",
+    cumulativeFeedback: "Model demonstrated high accuracy in detecting and interpreting multiple sclerosis lesions.",
+  },
 ]
 
 export default function DataPage() {
@@ -172,9 +242,24 @@ export default function DataPage() {
 
   const sortedData = React.useMemo(() => {
     if (!sortColumn) return filteredData
+    
     return [...filteredData].sort((a, b) => {
       const aValue = a[sortColumn as keyof DataRow]
       const bValue = b[sortColumn as keyof DataRow]
+      
+      // Handle undefined values
+      if (aValue === undefined && bValue === undefined) return 0
+      if (aValue === undefined) return sortDirection === 'asc' ? -1 : 1
+      if (bValue === undefined) return sortDirection === 'asc' ? 1 : -1
+      
+      // Handle arrays (comments and expertFeedback)
+      if (Array.isArray(aValue) && Array.isArray(bValue)) {
+        return sortDirection === 'asc' 
+          ? aValue.length - bValue.length 
+          : bValue.length - aValue.length
+      }
+      
+      // Handle strings and numbers
       if (aValue < bValue) return sortDirection === 'asc' ? -1 : 1
       if (aValue > bValue) return sortDirection === 'asc' ? 1 : -1
       return 0
@@ -192,12 +277,26 @@ export default function DataPage() {
     }
   }
 
-  const getConsensusIcon = (consensus: string, expertFeedback: ExpertFeedback[]) => {
+  const getConsensusIcon = (consensus: DataRow['consensus'], expertFeedback: ExpertFeedback[]) => {
     const positiveVotes = expertFeedback.filter(ef => ef.vote === 'positive').length
     const totalVotes = expertFeedback.length
+    let icon
+
+    switch (consensus) {
+      case 'check':
+        icon = <CheckCircle className="text-green-500 w-4 h-4" />
+        break
+      case 'alert':
+        icon = <AlertCircle className="text-yellow-500 w-4 h-4" />
+        break
+      case 'cross':
+        icon = <XCircle className="text-red-500 w-4 h-4" />
+        break
+    }
+
     return (
       <div className="flex items-center space-x-1">
-        <ThumbsUp className="w-4 h-4" />
+        {icon}
         <span>{positiveVotes}/{totalVotes}</span>
       </div>
     )
@@ -216,7 +315,7 @@ export default function DataPage() {
                 }}
               />
             </TableHead>
-            <TableHead className="w-[100px]">Scan</TableHead>
+            <TableHead className="w-[100px]">{dataVersion === "v2.0" ? "Audio" : "Scan"}</TableHead>
             {dataSet === "labeled" && (
               <>
                 <TableHead className="w-[200px]">Model Response</TableHead>
@@ -235,20 +334,39 @@ export default function DataPage() {
         </TableHeader>
         <TableBody>
           {sortedData.map((row) => (
-            <TableRow key={row.id}>
-              <TableCell>
+            <TableRow 
+              key={row.id}
+              className="cursor-pointer hover:bg-muted/50"
+              onClick={() => {
+                setSelectedItem(row)
+                setIsTaskModalOpen(true)
+              }}
+            >
+              <TableCell onClick={(e) => e.stopPropagation()}>
                 <Checkbox
                   checked={selectedRows.includes(row.id)}
                   onCheckedChange={() => handleRowSelect(row.id)}
                 />
               </TableCell>
-              <TableCell>
-                <img
-                  src={row.image}
-                  alt="MRI Scan"
-                  className="w-20 h-20 object-cover rounded-md cursor-pointer hover:opacity-80 transition-opacity"
-                  onClick={() => setSelectedImage(row.image)}
-                />
+              <TableCell onClick={(e) => e.stopPropagation()}>
+                {dataVersion === "v2.0" ? (
+                  <div className="w-[200px]">
+                    <AudioPlayer 
+                      src={`/audio/${row.audio}`} 
+                      key={row.id}
+                    />
+                  </div>
+                ) : (
+                  <img
+                    src={row.image}
+                    alt="MRI Scan"
+                    className="w-20 h-20 object-cover rounded-md cursor-pointer hover:opacity-80 transition-opacity"
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      setSelectedImage(row.image)
+                    }}
+                  />
+                )}
               </TableCell>
               {dataSet === "labeled" && (
                 <>
@@ -264,70 +382,10 @@ export default function DataPage() {
               <TableCell>
                 <div className="flex items-center space-x-2">
                   {getConsensusIcon(row.consensus, row.expertFeedback)}
-                  <Dialog>
-                    <DialogTrigger asChild>
-                      <Button 
-                        variant="link" 
-                        className="p-0 h-auto text-left whitespace-normal"
-                        onClick={() => setSelectedItem(row)}
-                      >
-                        {row.cumulativeFeedback}
-                      </Button>
-                    </DialogTrigger>
-                    <DialogContent className="max-w-4xl">
-                      <DialogHeader>
-                        <DialogTitle>Detailed View</DialogTitle>
-                        <DialogDescription>
-                          Detailed information about this annotation.
-                        </DialogDescription>
-                      </DialogHeader>
-                      {selectedItem && (
-                        <div className="mt-4 grid grid-cols-2 gap-4">
-                          <div>
-                            <img src={selectedItem.image} alt="MRI Scan" className="w-full rounded-md" />
-                          </div>
-                          <div className="space-y-4">
-                            <div>
-                              <h3 className="font-semibold">Input:</h3>
-                              <p>{selectedItem.input}</p>
-                            </div>
-                            <div>
-                              <h3 className="font-semibold">Consensus:</h3>
-                              <div className="flex items-center space-x-2">
-                                {getConsensusIcon(selectedItem.consensus, selectedItem.expertFeedback)}
-                                <span className="capitalize">{selectedItem.consensus}</span>
-                              </div>
-                            </div>
-                            <div>
-                              <h3 className="font-semibold">Cumulative Feedback:</h3>
-                              <p>{selectedItem.cumulativeFeedback}</p>
-                            </div>
-                            <div>
-                              <h3 className="font-semibold">Expert Feedback:</h3>
-                              {selectedItem.expertFeedback.map((ef, index) => {
-                                const expert = mockExperts.find(e => e.id === ef.expertId)
-                                return (
-                                  <div key={index} className="mt-2">
-                                    <div className="flex items-center space-x-2">
-                                      <Avatar>
-                                        <AvatarImage src={expert?.avatar} alt={expert?.name} />
-                                        <AvatarFallback>{expert?.name.split(' ').map(n => n[0]).join('')}</AvatarFallback>
-                                      </Avatar>
-                                      <span>{expert?.name}</span>
-                                    </div>
-                                    <p className="mt-1">{ef.feedback}</p>
-                                  </div>
-                                )
-                              })}
-                            </div>
-                          </div>
-                        </div>
-                      )}
-                    </DialogContent>
-                  </Dialog>
+                  <span>{row.cumulativeFeedback}</span>
                 </div>
               </TableCell>
-              <TableCell>
+              <TableCell onClick={(e) => e.stopPropagation()}>
                 <Button variant="ghost" className="h-8 w-8 p-0" onClick={() => setSelectedRowForComment(row)}>
                   <MessageSquare className="h-4 w-4" />
                   {row.comments.length > 0 && (
@@ -467,7 +525,7 @@ export default function DataPage() {
                 <SelectContent>
                   <SelectItem value="v1.0">Version 1.0</SelectItem>
                   <SelectItem value="v1.1">Version 1.1</SelectItem>
-                  <SelectItem value="v1.2">Version 1.2</SelectItem>
+                  <SelectItem value="v2.0">Version 2.0</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -552,7 +610,13 @@ export default function DataPage() {
           </DialogHeader>
           <div className="mt-4 grid grid-cols-2 gap-4">
             <div>
-              <img src={selectedRowForComment?.image} alt="MRI Scan" className="w-full rounded-md" />
+              {dataVersion === "v2.0" ? (
+                <div className="flex items-center justify-center h-full">
+                  <AudioPlayer src={`/audio/${selectedRowForComment?.audio}`} className="w-full" />
+                </div>
+              ) : (
+                <img src={selectedRowForComment?.image} alt="MRI Scan" className="w-full rounded-md" />
+              )}
             </div>
             <div className="space-y-4">
               <div>
@@ -600,6 +664,69 @@ export default function DataPage() {
               </div>
             </div>
           </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Detailed View Modal */}
+      <Dialog open={isTaskModalOpen} onOpenChange={setIsTaskModalOpen}>
+        <DialogContent className="max-w-4xl">
+          <DialogHeader>
+            <DialogTitle>Detailed View</DialogTitle>
+            <DialogDescription>
+              Detailed information about this annotation.
+            </DialogDescription>
+          </DialogHeader>
+          {selectedItem && (
+            <div className="mt-4 grid grid-cols-2 gap-4">
+              <div>
+                {dataVersion === "v2.0" ? (
+                  <div className="flex items-center justify-center h-full">
+                    <AudioPlayer 
+                      src={`/audio/${selectedItem?.audio}`}
+                      key={`modal-${selectedItem?.id}`}
+                    />
+                  </div>
+                ) : (
+                  <img src={selectedItem?.image} alt="MRI Scan" className="w-full rounded-md" />
+                )}
+              </div>
+              <div className="space-y-4">
+                <div>
+                  <h3 className="font-semibold">Input:</h3>
+                  <p>{selectedItem?.input}</p>
+                </div>
+                <div>
+                  <h3 className="font-semibold">Consensus:</h3>
+                  <div className="flex items-center space-x-2">
+                    {getConsensusIcon(selectedItem?.consensus, selectedItem?.expertFeedback)}
+                    <span className="capitalize">{selectedItem?.consensus}</span>
+                  </div>
+                </div>
+                <div>
+                  <h3 className="font-semibold">Cumulative Feedback:</h3>
+                  <p>{selectedItem?.cumulativeFeedback}</p>
+                </div>
+                <div>
+                  <h3 className="font-semibold">Expert Feedback:</h3>
+                  {selectedItem?.expertFeedback.map((ef, index) => {
+                    const expert = mockExperts.find(e => e.id === ef.expertId)
+                    return (
+                      <div key={index} className="mt-2">
+                        <div className="flex items-center space-x-2">
+                          <Avatar>
+                            <AvatarImage src={expert?.avatar} alt={expert?.name} />
+                            <AvatarFallback>{expert?.name.split(' ').map(n => n[0]).join('')}</AvatarFallback>
+                          </Avatar>
+                          <span>{expert?.name}</span>
+                        </div>
+                        <p className="mt-1">{ef.feedback}</p>
+                      </div>
+                    )
+                  })}
+                </div>
+              </div>
+            </div>
+          )}
         </DialogContent>
       </Dialog>
     </div>
